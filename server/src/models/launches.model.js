@@ -15,8 +15,6 @@ const launch = {
   success: true, // success
 };
 
-saveLaunch(launch);
-
 const SPACEX_API_URL = "https://api.spacexdata.com/v4/launches/query";
 
 async function populateLaunches() {
@@ -24,9 +22,8 @@ async function populateLaunches() {
   const response = await axios.post(SPACEX_API_URL, {
     query: {},
     options: {
-      // pagination: false,
-      populate: [
-        {
+      pagination: false,
+      populate: [{
           path: "rocket",
           select: {
             name: 1,
@@ -35,7 +32,7 @@ async function populateLaunches() {
         {
           path: "payloads",
           select: {
-            'çustomers': 1,
+            'customers': 1,
           },
         },
       ],
@@ -49,11 +46,9 @@ async function populateLaunches() {
   }
 
   const launchDocs = response.data.docs;
-  console.log(launchDocs[6]["payloads"]);
   for (const launchDoc of launchDocs) {
     const payloads = launchDoc["payloads"];
     const customers = payloads.flatMap((payload) => {
-      // console.log(payload["customers"]);
       return payload["customers"];
     });
     const launch = {
@@ -65,7 +60,7 @@ async function populateLaunches() {
       success: launchDoc["success"],
       customers,
     };
-    // console.log(customers);
+    console.log(`${launch.flightNumber} ${launch.mission}`)
     await saveLaunch(launch);
   }
 }
@@ -76,13 +71,12 @@ async function loadLaunchData() {
     rocket: "Falcon 1",
     mission: "FalconSat",
   });
-  // if (firstLaunch) {
-  //   console.log("Launch data already loaded!");
-  // } else {
-  //   await populateLaunches();
-  // }
+  if (firstLaunch) {
+    console.log("Launch data already loaded!");
+  } else {
+    await populateLaunches();
+  }
 
-  await populateLaunches();
 }
 
 async function findLaunch(filter) {
@@ -104,17 +98,18 @@ async function getLatestFlightNumber() {
   return latestLaunch.flightNumber;
 }
 
-async function getAllLaunches() {
-  return await launchesDatabase.find({}, { _id: 0, __v: 0 });
+async function getAllLaunches(skip, limit) {
+  return await launchesDatabase.find({}, {
+    _id: 0,
+    __v: 0
+  }).skip(skip).limit(limit);
 }
 
 async function saveLaunch(launch) {
-  await launchesDatabase.findOneAndUpdate(
-    {
+  await launchesDatabase.findOneAndUpdate({
       flightNumber: launch.flightNumber,
     },
-    launch,
-    {
+    launch, {
       upsert: true,
     }
   );
@@ -140,15 +135,12 @@ async function scheduleNewLaunch(launch) {
 }
 
 async function abortLaunchById(launchId) {
-  const aborted = await launchesDatabase.updateOne(
-    {
-      flightNumber: launchId,
-    },
-    {
-      upcoming: false,
-      success: false,
-    }
-  );
+  const aborted = await launchesDatabase.updateOne({
+    flightNumber: launchId,
+  }, {
+    upcoming: false,
+    success: false,
+  });
 
   return aborted.modifiedCount === 1;
 }
