@@ -4,14 +4,18 @@
   "description": "NASA Misson Control API",
   "main": "src/server.js",
   "scripts": {
-    "test": "jest",
-    "test-watch": "jest --watch",
+    "test": "jest --detectOpenHandles",
+    "test-watch": "jest --detectOpenHandles --watch",
     "watch": "nodemon src/server.js",
     "start": "node src/server.js",
     "cluster": "pm2 start src/server.js -i max"
   },
   "license": "MIT",
+  "jest": {
+    "testEnvironment": "node"
+  },
   "dependencies": {
+    "axios": "^0.26.0",
     "cors": "^2.8.5",
     "csv-parse": "^5.0.4",
     "dotenv": "^16.0.0",
